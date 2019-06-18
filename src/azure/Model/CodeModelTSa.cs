@@ -25,10 +25,6 @@ namespace AutoRest.TypeScript.Azure.Model
         [JsonIgnore]
         public override bool IsAzure => true;
 
-
-        [JsonIgnore]
-        public override IEnumerable<CompositeTypeTS> ModelTemplateModels => base.ModelTemplateModels.Concat(PageTemplateModels).Where(each => !PageTemplateModels.Any(ptm => ptm.Name.EqualsIgnoreCase(each.Name)));
-
         public override string OptionalParameterTypeForClientConstructor
         {
             get
@@ -54,8 +50,6 @@ namespace AutoRest.TypeScript.Azure.Model
 
             return base.Add(item);
         }
-
-        public IList<PageCompositeTypeTSa> PageTemplateModels { get; set; } = new List<PageCompositeTypeTSa>();
 
         public override void ConstructRuntimeImportForModelIndex(TSBuilder builder)
         {
@@ -132,12 +126,6 @@ namespace AutoRest.TypeScript.Azure.Model
 
             ExportOrderedMapperModels(builder, orderedMapperTemplateModels);
 
-            foreach (PageCompositeTypeTSa pageModel in PageTemplateModels)
-            {
-                builder.Line();
-                pageModel.ConstructModelMapper(builder);
-            }
-
             ExportPolymorphicDictionary(builder);
 
             return builder.ToString();
@@ -170,11 +158,6 @@ namespace AutoRest.TypeScript.Azure.Model
             builder.Line();
             builder.Export("BaseResource", "CloudError");
             foreach (CompositeTypeTS model in OrderedModelTemplateModels)
-            {
-                builder.Line();
-                builder.Line(model.Generate());
-            }
-            foreach(PageCompositeTypeTSa model in PageTemplateModels)
             {
                 builder.Line();
                 builder.Line(model.Generate());

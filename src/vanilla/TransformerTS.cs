@@ -8,6 +8,7 @@ using AutoRest.Core;
 using AutoRest.Core.Model;
 using AutoRest.Core.Utilities;
 using AutoRest.Extensions;
+using AutoRest.Extensions.Azure;
 using AutoRest.TypeScript.Model;
 using static AutoRest.Core.Utilities.DependencyInjection;
 using System.Collections.Generic;
@@ -25,6 +26,8 @@ namespace AutoRest.TypeScript
             SwaggerExtensions.NormalizeClientModel(codeModel);
             TransformHeaderCollectionParameterTypes(codeModel);
             PopulateAdditionalProperties(codeModel);
+            AzureExtensions.AddPageableMethod(codeModel);
+            NormalizePaginatedMethods(codeModel);
             NormalizeOdataFilterParameter(codeModel);
             PerformParameterMapping(codeModel);
             CreateModelTypeForOptionalClientProperties(codeModel);
@@ -439,6 +442,48 @@ namespace AutoRest.TypeScript
                     }
                     method.Add(optionsParameterTemplateModel);
                     cm.Add(optionsParameterModelType);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Changes paginated method signatures to return Page type.
+        /// </summary>
+        /// <param name="codeModel"></param>
+        public virtual void NormalizePaginatedMethods(CodeModelTS codeModel)
+        {
+            if (codeModel == null)
+            {
+                throw new ArgumentNullException("codeModel");
+            }
+
+            foreach (var method in codeModel.Methods.Where(m => m.Extensions.ContainsKey(AzureExtensions.PageableExtension)))
+            {
+                string nextLinkName = null;
+                var ext = method.Extensions[AzureExtensions.PageableExtension] as Newtonsoft.Json.Linq.JContainer;
+                if (ext == null)
+                {
+                    continue;
+                }
+
+                nextLinkName = (string)ext["nextLinkName"];
+                string itemName = (string)ext["itemName"] ?? "value";
+                foreach (var responseStatus in method.Responses.Where(r => r.Value.Body is CompositeType).Select(s => s.Key).ToArray())
+                {
+                    var compositType = (CompositeType)method.Responses[responseStatus].Body;
+                    var sequenceType = compositType.Properties.Select(p => p.ModelType).FirstOrDefault(t => t is SequenceType) as SequenceType;
+
+                    // if the type is a wrapper over page-able response
+                    if (sequenceType != null)
+                    {
+                        compositType.Extensions[AzureExtensions.PageableExtension] = true;
+                        var pageTemplateModel = new PageCompositeTypeTS(nextLinkName, itemName).LoadFrom(compositType);
+                        // var pageTemplateModel = new PageTemplateModel(compositType, serviceClient, nextLinkName, itemName);
+                        if (!codeModel.PageTemplateModels.Any(ptm => ptm.Name == pageTemplateModel.Name))
+                        {
+                            codeModel.PageTemplateModels.Add(pageTemplateModel);
+                        }
+                    }
                 }
             }
         }

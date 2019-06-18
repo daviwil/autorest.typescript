@@ -34,7 +34,6 @@ namespace AutoRest.TypeScript.Azure
 
             AzureExtensions.NormalizeAzureClientModel(codeModel);
             base.TransformCodeModel(codeModel);
-            NormalizePaginatedMethods(codeModel);
             ExtendAllResourcesToBaseResource(codeModel);
             CreateModelTypeForOptionalClientProperties(codeModel);
             return codeModel;
@@ -50,48 +49,6 @@ namespace AutoRest.TypeScript.Azure
                         (bool)model.Extensions[AzureExtensions.AzureResourceExtension])
                     {
                         model.BaseModelType = New<CompositeType>( new { Name = "BaseResource", SerializedName = "BaseResource" });
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Changes paginated method signatures to return Page type.
-        /// </summary>
-        /// <param name="codeModel"></param>
-        public virtual void NormalizePaginatedMethods(CodeModelTSa codeModel)
-        {
-            if (codeModel == null)
-            {
-                throw new ArgumentNullException("codeModel");
-            }
-
-            foreach (var method in codeModel.Methods.Where(m => m.Extensions.ContainsKey(AzureExtensions.PageableExtension)))
-            {
-                string nextLinkName = null;
-                var ext = method.Extensions[AzureExtensions.PageableExtension] as Newtonsoft.Json.Linq.JContainer;
-                if (ext == null)
-                {
-                    continue;
-                }
-
-                nextLinkName = (string)ext["nextLinkName"];
-                string itemName = (string)ext["itemName"] ?? "value";
-                foreach (var responseStatus in method.Responses.Where(r => r.Value.Body is CompositeType).Select(s => s.Key).ToArray())
-                {
-                    var compositType = (CompositeType)method.Responses[responseStatus].Body;
-                    var sequenceType = compositType.Properties.Select(p => p.ModelType).FirstOrDefault(t => t is SequenceType) as SequenceType;
-
-                    // if the type is a wrapper over page-able response
-                    if (sequenceType != null)
-                    {
-                        compositType.Extensions[AzureExtensions.PageableExtension] = true;
-                        var pageTemplateModel = new PageCompositeTypeTSa(nextLinkName, itemName).LoadFrom(compositType);
-                        // var pageTemplateModel = new PageTemplateModel(compositType, serviceClient, nextLinkName, itemName);
-                        if (!codeModel.PageTemplateModels.Any(ptm => ptm.Name == pageTemplateModel.Name))
-                        {
-                            codeModel.PageTemplateModels.Add(pageTemplateModel);
-                        }
                     }
                 }
             }

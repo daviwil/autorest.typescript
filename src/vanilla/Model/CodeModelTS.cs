@@ -4,6 +4,7 @@
 using AutoRest.Core.Model;
 using AutoRest.Core.Utilities;
 using AutoRest.Extensions;
+using AutoRest.Extensions.Azure;
 using AutoRest.TypeScript.DSL;
 using Newtonsoft.Json;
 using System;
@@ -143,7 +144,12 @@ namespace AutoRest.TypeScript.Model
         public IEnumerable<MethodTS> MethodTemplateModels => Methods.Cast<MethodTS>().Where(each => each.MethodGroup.IsCodeModelMethodGroup);
 
         [JsonIgnore]
-        public virtual IEnumerable<CompositeTypeTS> ModelTemplateModels => ModelTypes.Concat(HeaderTypes).Cast<CompositeTypeTS>();
+        public virtual IEnumerable<CompositeTypeTS> ModelTemplateModels =>
+            ModelTypes
+                .Concat(HeaderTypes)
+                .Concat(PageTemplateModels)
+                .Where(each => !PageTemplateModels.Any(ptm => ptm.Name.EqualsIgnoreCase(each.Name)))
+                .Cast<CompositeTypeTS>();
 
         [JsonIgnore]
         public virtual IEnumerable<EnumTypeTS> EnumTemplateModels => EnumTypes.Cast<EnumTypeTS>();
@@ -565,6 +571,20 @@ namespace AutoRest.TypeScript.Model
             return ModelTemplateModels.Any(m => m != null && m.BaseModelType != null && m.BaseModelType.Name.EqualsIgnoreCase("RequestOptionsBase"));
         }
 
+        public IList<PageCompositeTypeTS> PageTemplateModels { get; set; } = new List<PageCompositeTypeTS>();
+
+        public override CompositeType Add(CompositeType item)
+        {
+            // Removing all models that contain the extension "x-ms-external", as they will be
+            // generated in TypeScript client runtime for azure - "@azure/ms-rest-azure-js".
+            if (item.Extensions.ContainsKey(AzureExtensions.PageableExtension))
+            {
+                return null;
+            }
+
+            return base.Add(item);
+        }
+
         public string ConstructRuntimeImportForModelIndex()
         {
             TSBuilder builder = new TSBuilder();
@@ -816,6 +836,12 @@ namespace AutoRest.TypeScript.Model
             builder.Line();
 
             ExportOrderedMapperModels(builder, orderedMapperTemplateModels);
+
+            foreach (PageCompositeTypeTS pageModel in PageTemplateModels)
+            {
+                builder.Line();
+                pageModel.ConstructModelMapper(builder);
+            }
 
             ExportPolymorphicDictionary(builder);
 
@@ -1286,6 +1312,11 @@ namespace AutoRest.TypeScript.Model
                 builder.ImportAllAs("coreHttp", "@azure/core-http");
             }
             foreach (CompositeTypeTS model in OrderedModelTemplateModels)
+            {
+                builder.Line();
+                builder.Line(model.Generate());
+            }
+            foreach(PageCompositeTypeTS model in PageTemplateModels)
             {
                 builder.Line();
                 builder.Line(model.Generate());
