@@ -50,8 +50,10 @@ namespace AutoRest.TypeScript.Model
 
         public override void ConstructModelMapper(TSBuilder builder)
         {
+            bool isXML = CodeModel?.ShouldGenerateXmlSerialization == true;
+            // Logger.Instance.Log(Category.Debug, $"### PAGING MAPPER '{Name}', xml: '{isXML}'");
             builder.Text($"export const {Name}: coreHttp.CompositeMapper = ");
-            ClientModelExtensions.ConstructMapper(builder, this, SerializedName, null, isPageable: true, expandComposite: true, isXML: CodeModel?.ShouldGenerateXmlSerialization == true);
+            ClientModelExtensions.ConstructMapper(builder, this, SerializedName, null, isPageable: true, expandComposite: true, isXML: isXML, xmlName: isXML ? XmlName : null);
             builder.Line(";");
         }
 

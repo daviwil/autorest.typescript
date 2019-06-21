@@ -478,6 +478,7 @@ namespace AutoRest.TypeScript
                     {
                         compositType.Extensions[AzureExtensions.PageableExtension] = true;
                         var pageTemplateModel = new PageCompositeTypeTS(nextLinkName, itemName).LoadFrom(compositType);
+                        pageTemplateModel.CodeModel = codeModel;
                         // var pageTemplateModel = new PageTemplateModel(compositType, serviceClient, nextLinkName, itemName);
                         if (!codeModel.PageTemplateModels.Any(ptm => ptm.Name == pageTemplateModel.Name))
                         {
