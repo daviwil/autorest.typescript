@@ -837,12 +837,6 @@ namespace AutoRest.TypeScript.Model
 
             ExportOrderedMapperModels(builder, orderedMapperTemplateModels);
 
-            foreach (PageCompositeTypeTS pageModel in PageTemplateModels)
-            {
-                builder.Line();
-                pageModel.ConstructModelMapper(builder);
-            }
-
             ExportPolymorphicDictionary(builder);
 
             return builder.ToString();
