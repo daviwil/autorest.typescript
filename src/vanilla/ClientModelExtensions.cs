@@ -374,7 +374,7 @@ namespace AutoRest.TypeScript
                     mapper.BooleanProperty("xmlElementIsWrapped", true);
                 }
 
-                string xmlElementName = sequence.ElementType.XmlProperties?.Name ?? sequence.ElementXmlName;
+                string xmlElementName = sequence.ElementType.XmlName ?? sequence.ElementXmlName;
                 if (!string.IsNullOrEmpty(xmlElementName))
                 {
                     mapper.QuotedStringProperty("xmlElementName", xmlElementName);
