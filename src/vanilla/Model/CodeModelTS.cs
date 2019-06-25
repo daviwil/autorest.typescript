@@ -1310,11 +1310,6 @@ namespace AutoRest.TypeScript.Model
                 builder.Line();
                 builder.Line(model.Generate());
             }
-            foreach(PageCompositeTypeTS model in PageTemplateModels)
-            {
-                builder.Line();
-                builder.Line(model.Generate());
-            }
             foreach (EnumTypeTS model in EnumTemplateModels)
             {
                 builder.Line();
